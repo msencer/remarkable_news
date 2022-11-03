@@ -1,11 +1,16 @@
 package main
 
 import (
+    "bytes"
+    "os"
+    "os/exec"
 	"flag"
 	"time"
 	"fmt"
 	"image"
+    "image/png"
 	"github.com/disintegration/imaging"
+    "crypto/md5"
 )
 
 func main() {
@@ -88,8 +93,43 @@ func main() {
 
 			// img = adjust(img, *top, *left, *right, *bottom)
 			img = adjust(img, *mode, *scale)
-			imaging.Save(img, *output)
-			debug("Image saved to ", *output)
+            if areImagesSame(img, *output) {
+                debug("Already have this, so skipping")
+            } else {
+                debug("New image, let's reload")
+                imaging.Save(img, *output)
+                debug("Image saved to ", *output)
+                // Restarting the ReMarkable2 to reload the suspended.png
+                _ = exec.Command("systemctl restart xochitl").Run();
+            }
 		}
 	}
+}
+
+func md5Image(image image.Image) string{
+    h := md5.New()
+    buf:=new (bytes.Buffer)
+    png.Encode(buf, image)
+    checksum := h.Sum(buf.Bytes())[:16]
+
+    return fmt.Sprintf("%x", checksum)
+}
+
+func getImageFromFilePath(filePath string) (image.Image, error) {
+    f, err := os.Open(filePath)
+    if err != nil {
+        return nil, err
+    }
+    defer f.Close()
+    image, _, err := image.Decode(f)
+    return image, err
+}
+
+func areImagesSame(new_image image.Image, fileName string) bool{
+    existing_image,err := getImageFromFilePath(fileName)
+    if err != nil {
+        return false
+    }
+
+    return md5Image(new_image) == md5Image(existing_image)
 }
