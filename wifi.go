@@ -6,7 +6,7 @@ import (
 	"strings"
 	// "io/ioutil"
 
-	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/v5"
 )
 
 
