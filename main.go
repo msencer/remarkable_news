@@ -98,9 +98,13 @@ func main() {
             } else {
                 debug("New image, let's reload")
                 imaging.Save(img, *output)
-                debug("Image saved to ", *output)
+                debug("Image saved to ", *output , " restarting...")
+			    time.Sleep(1 * time.Second)
                 // Restarting the ReMarkable2 to reload the suspended.png
-                _ = exec.Command("systemctl restart xochitl").Run();
+                err = exec.Command("systemctl", "restart" ,"xochitl").Run();
+                if err != nil {
+					fmt.Println(err)
+                }
             }
 		}
 	}
@@ -110,7 +114,7 @@ func md5Image(image image.Image) string{
     h := md5.New()
     buf:=new (bytes.Buffer)
     png.Encode(buf, image)
-    checksum := h.Sum(buf.Bytes())[:16]
+    checksum := h.Sum(buf.Bytes())[:64]
 
     return fmt.Sprintf("%x", checksum)
 }
